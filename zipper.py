@@ -11,8 +11,8 @@ def zip_files(file_paths, output):
 
 
 def unzip_files(archive, output_dir):
-    if not os.path.exists(output_dir):
-        raise FileNotFoundError(f"Directory {output_dir} doesn't exist!")
+    if not (os.path.exists(output_dir) or os.path.exists(archive)):
+        raise FileNotFoundError(f"Output directory or archive doesn't exist!")
 
     with zipfile.ZipFile(archive, 'r') as zipf:
         zipf.extractall(output_dir)
