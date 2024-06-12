@@ -1,16 +1,22 @@
-# This is a sample Python script.
-
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+import zipper
+from scratch_utils import BlockChain, OPCODES, Project, BUILTIN_COSTUMES
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+def main():
+    chain = BlockChain()
+
+    chain.add_block(OPCODES.EVENT_WHENFLAGCLICKED)
+    chain.add_block(OPCODES.MOTION_MOVESTEPS, [100])
+    chain.add_block(OPCODES.MOTION_TURNRIGHT, [90])
+    chain.add_block(OPCODES.MOTION_MOVESTEPS, [50])
+
+    new_project = Project()
+    new_project.create_sprite("Cat", BUILTIN_COSTUMES.DEFAULT_CAT)
+    new_project.add_block_chain("Cat", chain)
+
+    new_project.save()
+    zipper.build_project()
 
 
-# Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    print_hi('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    main()
