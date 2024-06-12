@@ -1,7 +1,7 @@
 import os
 import zipfile
 
-script_path = os.path.dirname(os.path.realpath(__file__))
+SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 
 
 def zip_files(file_paths, output):
@@ -19,7 +19,7 @@ def unzip_files(archive, output_dir):
 
 
 def build_project(output_name="output"):
-    build_dir = os.path.join(script_path, "build")
+    build_dir = os.path.join(SCRIPT_PATH, "build")
     project_dir = os.path.join(build_dir, "project")
 
     if not (os.path.exists(build_dir) and os.path.exists(project_dir)):
