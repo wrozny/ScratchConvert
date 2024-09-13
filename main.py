@@ -1,21 +1,33 @@
 import zipper
-from scratch_utils import BlockChain, OPCODES, Project, BUILTIN_COSTUMES
+import Scratch
 
 
 def main():
-    chain = BlockChain()
+    project = Scratch.Project()
+    sprite = Scratch.Sprite("Cat")
 
-    chain.add_block(OPCODES.EVENT_WHENFLAGCLICKED)
-    chain.add_block(OPCODES.MOTION_MOVESTEPS, [100])
-    chain.add_block(OPCODES.MOTION_TURNRIGHT, [90])
-    chain.add_block(OPCODES.MOTION_MOVESTEPS, [50])
+    block_stack = Scratch.BlockStack()
 
-    new_project = Project()
-    new_project.create_sprite("Cat", BUILTIN_COSTUMES.DEFAULT_CAT)
-    new_project.add_block_chain("Cat", chain)
+    block1 = Scratch.Block(opcode="event_whenflagclicked")
+    block2 = Scratch.Block(opcode="motion_movesteps", args={
+        "STEPS": [
+            1,
+            [
+                4,
+                "25"
+            ]
+        ]
+    })
 
-    new_project.save()
-    zipper.build_project()
+    block_stack.add_block(block1)
+    block_stack.add_block(block2)
+
+    sprite.set_block_stack(block_stack)
+
+    project.add_sprite(sprite)
+
+    project.build_project()
+    zipper.build_sb3()
 
 
 if __name__ == '__main__':
