@@ -5,25 +5,26 @@ SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 
 
 def zip_files(file_paths, output):
-    with zipfile.ZipFile(output, 'w') as zipf:
+    with zipfile.ZipFile(output, 'w') as zip_file:
         for file in file_paths:
-            zipf.write(file, os.path.basename(file))
+            zip_file.write(file, os.path.basename(file))
 
 
 def unzip_files(archive, output_dir):
     if not (os.path.exists(output_dir) or os.path.exists(archive)):
         raise FileNotFoundError(f"Output directory or archive doesn't exist!")
 
-    with zipfile.ZipFile(archive, 'r') as zipf:
-        zipf.extractall(output_dir)
+    with zipfile.ZipFile(archive, 'r') as zip_file:
+        zip_file.extractall(output_dir)
 
 
-def build_project(output_name="output"):
+def build_sb3(project_dir=None, output_name="output"):
     build_dir = os.path.join(SCRIPT_PATH, "build")
-    project_dir = os.path.join(build_dir, "project")
+    if project_dir is None:
+        project_dir = os.path.join(build_dir, "project")
 
     if not (os.path.exists(build_dir) and os.path.exists(project_dir)):
-        raise FileNotFoundError("Failed to find build files!")
+        raise NotADirectoryError("Failed to find build directory!")
 
     output_dir = os.path.join(build_dir, "output")
 
