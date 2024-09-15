@@ -1,30 +1,39 @@
+import os
+
 import zipper
-import Scratch
+import scratch
+import tokenizer
+from parser import Parser
+
+SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
+SRC_DIR = os.path.join(SCRIPT_PATH, "src")
+MAIN_FILE_PATH = os.path.join(SRC_DIR, "main.sl")
 
 
 def main():
-    project = Scratch.Project()
-    sprite = Scratch.Sprite("Cat")
+    if not os.path.isfile(MAIN_FILE_PATH):
+        return print("No 'main.sl' file in src directory!")
 
-    block_stack = Scratch.BlockStack()
+    file_content: str
+    with open(MAIN_FILE_PATH, "r") as file:
+        file_content = file.read()
 
-    block1 = Scratch.Block(opcode="event_whenflagclicked")
-    block2 = Scratch.Block(opcode="motion_movesteps", args={
-        "STEPS": [
-            1,
-            [
-                4,
-                "25"
-            ]
-        ]
-    })
+    tokens = tokenizer.tokenize(file_content)
+    parser = Parser(tokens=tokens)
+    tree = parser.parse()
 
-    block_stack.add_block(block1)
-    block_stack.add_block(block2)
+    sprites = {}
+    for sprite_name in parser.sprites:
+        sprite_obj = scratch.Sprite(sprite_name)
+        sprite = parser.sprites[sprite_name]
+        for variable_name in sprite["variables"]:
+            variable_initial_value = sprite["variables"][variable_name]
+            sprite_obj.create_variable(name=variable_name, initial_value=variable_initial_value)
+        sprites[sprite_name] = sprite_obj
 
-    sprite.set_block_stack(block_stack)
-
-    project.add_sprite(sprite)
+    project = scratch.Project()
+    for sprite_name in sprites:
+        project.add_sprite(sprites[sprite_name])
 
     project.build_project()
     zipper.build_sb3()
