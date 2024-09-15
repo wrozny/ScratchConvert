@@ -1,6 +1,6 @@
 import json
 import os
-from ScratchConstants import *
+from scratch_constants import *
 from string import ascii_letters
 from random import choice
 
@@ -12,7 +12,7 @@ LETTERS = [*ascii_letters]
 
 
 def generate_uuid():
-    return "".join([choice(LETTERS) for _ in range(32)])
+    return "".join([choice(LETTERS) for _ in range(16)])
 
 
 class Expression:
@@ -21,9 +21,10 @@ class Expression:
 
 
 class Block:
-    def __init__(self, opcode, args=None):
+    def __init__(self, opcode, inputs=None, fields=None):
         self.opcode = opcode
-        self.args = args
+        self.inputs = inputs
+        self.fields = fields
         self.id = generate_uuid()
 
     def compile(self, parent_block=None, next_block=None):
@@ -31,7 +32,8 @@ class Block:
         block["next"] = next_block
         block["parent"] = parent_block
         block["opcode"] = self.opcode
-        block["inputs"] = self.args or {}
+        block["inputs"] = self.inputs or {}
+        block["fields"] = self.fields or {}
         return self.id, block
 
 
@@ -65,20 +67,47 @@ class BlockStack:
 
 class Sprite:
     def __init__(self, name):
-        self.block_stack = None
         self.name = name
+        self.variables = {}
 
-    def set_block_stack(self, block_stack):
-        self.block_stack = block_stack
+    def get_variable_id(self, name):
+        return name + f"-{self.name}"
+
+    def create_variable(self, name, initial_value):
+        self.variables[self.get_variable_id(name)] = [name, initial_value]
 
     def compile(self):
         sprite = SPRITE_BASE.copy()
         sprite["name"] = self.name
-        sprite_blocks = self.block_stack.compile_stack()
 
-        for block_id in sprite_blocks:
-            sprite["blocks"][block_id] = sprite_blocks[block_id]
+        variables = {}
+        for variable_id in self.variables:
+            variable_data = self.variables[variable_id]
+            variable_name = variable_data[0]
+            initial_value = variable_data[1] or ""
+            variables[variable_id] = [variable_name, initial_value]
 
+        sprite["variables"] = variables
+
+        # variable initial setters
+
+        setters_block_stack = BlockStack()
+        setters_block_stack.add_block(Block(opcode="event_whenflagclicked"))
+
+        for variable_name in self.variables:
+            variable_data = self.variables[variable_name]
+            block = Block(
+                opcode="data_setvariableto",
+                inputs={"VALUE": [1, [10, variable_data[1] or ""]]},
+                fields={"VARIABLE": [variable_data[0], self.get_variable_id(variable_data[0])]}
+            )
+            setters_block_stack.add_block(block)
+
+        setters_output = setters_block_stack.compile_stack()
+        for block_id in setters_output:
+            sprite["blocks"][block_id] = setters_output[block_id]
+
+        sprite["blocks"] = setters_output
         # compile blocks and put them inside the sprite
         return sprite
 
