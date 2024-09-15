@@ -15,12 +15,7 @@ PROJECT_BASE = {
 DEFAULT_STAGE = {
     "isStage": True,
     "name": "Stage",
-    "variables": {
-        "GlobalVariable1": [
-            "This variable that got compiled",
-            "This is the value of the variable!!!!!1111!!!!!"
-        ]
-    },
+    "variables": {},
     "lists": {},
     "broadcasts": {},
     "blocks": {},
