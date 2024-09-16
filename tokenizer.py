@@ -7,7 +7,7 @@ token_specification = [
     ('END', r';'),  # Statement terminator
     ('ID', r'[A-Za-z_]\w*'),  # Identifiers (variable names, function names)
     ('STRING', r'"[^"]*"'),  # String literals
-    ('OP', r'[+*/><-]'),  # Operators
+    ('OP', r'\.\.|[+*/><-]'),  # Operators
     ('LBRACE', r'\{'),  # Left brace
     ('RBRACE', r'\}'),  # Right brace
     ('LPAREN', r'\('),  # Left parenthesis
