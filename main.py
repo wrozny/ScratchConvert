@@ -1,13 +1,13 @@
 import os
 
 import zipper
-import scratch
-import tokenizer
-from parser import Parser
+from compiler import Compiler
 
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 SRC_DIR = os.path.join(SCRIPT_PATH, "src")
 MAIN_FILE_PATH = os.path.join(SRC_DIR, "main.sl")
+BUILD_DIR_PATH = os.path.join(SCRIPT_PATH, "build")
+PROJECT_DIR_PATH = os.path.join(BUILD_DIR_PATH, "project")
 
 
 def main():
@@ -18,24 +18,10 @@ def main():
     with open(MAIN_FILE_PATH, "r") as file:
         file_content = file.read()
 
-    tokens = tokenizer.tokenize(file_content)
-    parser = Parser(tokens=tokens)
-    tree = parser.parse()
+    compiler = Compiler()
+    compiler.compile(file_content=file_content)
+    compiler.project.build_project(output_directory=PROJECT_DIR_PATH)
 
-    sprites = {}
-    for sprite_name in parser.sprites:
-        sprite_obj = scratch.Sprite(sprite_name)
-        sprite = parser.sprites[sprite_name]
-        for variable_name in sprite["variables"]:
-            variable_initial_value = sprite["variables"][variable_name]
-            sprite_obj.create_variable(name=variable_name, initial_value=variable_initial_value)
-        sprites[sprite_name] = sprite_obj
-
-    project = scratch.Project()
-    for sprite_name in sprites:
-        project.add_sprite(sprites[sprite_name])
-
-    project.build_project()
     zipper.build_sb3()
 
 
