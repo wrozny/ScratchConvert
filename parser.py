@@ -58,7 +58,14 @@ class Parser:
 
     def get_identifier_type(self, identifier):
         chunks = identifier.split(".")
-        return self._resolve_identifier(chunks)
+
+        if len(chunks) == 2:
+            source_of_problems = self.get_temp_variable_identifier(chunks[1])  # is actually temp variable name and was source of problems, still is sometimes
+            identifier_type = self._resolve_identifier(source_of_problems.split("."))
+            if identifier_type is not None:
+                return identifier_type, source_of_problems
+
+        return self._resolve_identifier(chunks), identifier
 
     def _resolve_identifier(self, chunks):
         if not chunks:
@@ -134,7 +141,7 @@ class Parser:
                 elif token_value == 'define':
                     raise Exception("Can't define a function inside braces!")
                 elif token_value == 'var':
-                    raise Exception("Can't create variable inside braces! Not yet at least!")
+                    instructions.append(self.parse_temp_variable())
                 elif token_value == "if":
                     instructions.append(self.parse_if_statement())
                 elif token_value == "repeat":
@@ -142,8 +149,20 @@ class Parser:
                 elif token_value == "repeat_until":
                     instructions.append(self.parse_repeat(repeat_type="repeat_until"))
             elif token_type == 'ID':
-                identifier_name = self.expect_identifier()
-                identifier_type = self.get_identifier_type(identifier_name)
+                identifier = self.expect_identifier()
+
+                identifier_type, identifier = self.get_identifier_type(identifier)
+                identifier_name = identifier
+
+                # if len(identifier.split(".")) == 2:
+                #     identifier_name = self.get_temp_variable_identifier(identifier.split(".")[1])
+                #     identifier_type = self.get_identifier_type(identifier_name)
+                #
+                #     if identifier_type is None:
+                #         identifier_name = identifier
+                #         identifier_type = self.get_identifier_type(identifier_name)
+                #         if identifier_type is None:
+                #             raise Exception(f"'{identifier_name}' doesn't exist!")
 
                 if identifier_type == "function":
                     instructions.append(
@@ -155,9 +174,6 @@ class Parser:
                 if identifier_type == "method":
                     instructions.append(
                         self.parse_function_call(function_name=identifier_name, execution_type="call_method"))
-
-                if identifier_type is None:
-                    raise Exception(f"'{identifier_name}' doesn't exist!")
 
                 self.advance()
                 # handle functions or getting variables
@@ -211,7 +227,8 @@ class Parser:
             if self.current_token()[0] == "ID":
                 identifier = self.expect_identifier()
                 self.current_token_index -= 1  # ????
-                identifier_type = self.get_identifier_type(identifier)
+
+                identifier_type, identifier = self.get_identifier_type(identifier)
 
                 if identifier_type == "variable" or identifier_type == "argument":
                     tokens.append((identifier_type.upper(), identifier))
@@ -261,9 +278,32 @@ class Parser:
 
         return [execution_type, function_name, args]
 
+    def get_temp_variable_identifier(self, identifier):
+        return f"{self.current_function_name} {identifier}"
+
+    def parse_temp_variable(self):
+        self.advance()
+        identifier = self.expect_identifier()
+        split_identifier = identifier.split(".")
+
+        variable_identifier = self.get_temp_variable_identifier(split_identifier[1])
+        variable_identifier_split = variable_identifier.split(".")
+
+        if not variable_identifier_split[1] in self.sprites[self.current_scope]:
+            self.sprites[self.current_scope]["variables"][variable_identifier_split[1]] = None
+        else:
+            raise Exception(f"Variable {variable_identifier} already exists!")
+
+        self.expect("ASSIGN")
+
+        return ["assign", variable_identifier, self.parse_ongoing_tokens()]
+
     def parse_variable(self):
         self.advance()
         variable_name = self.expect_identifier()
+        identifier_type = self.get_identifier_type(variable_name)
+        if identifier_type == "variable":
+            raise Exception(f"There's more than one variable '{variable_name}'!")
 
         if self.current_token()[0] == "ASSIGN":
             self.advance()
@@ -310,7 +350,21 @@ class Parser:
             current_token = self.current_token()
             if current_token[0] == "ID":
                 identifier = self.expect_identifier()
-                identifier_type = self.get_identifier_type(identifier)
+
+                identifier_type, identifier = self.get_identifier_type(identifier)
+
+                # if len(identifier.split(".")) == 2:
+                #     identifier_name = self.get_temp_variable_identifier(identifier.split(".")[1])
+                #     identifier_type = self.get_identifier_type(identifier_name)
+                #
+                #     if identifier_type == "variable":
+                #         identifier = identifier_name
+                #
+                #     if identifier_type is None:
+                #         identifier_name = identifier
+                #         identifier_type = self.get_identifier_type(identifier)
+                #         if identifier_type is None:
+                #             raise Exception(f"'{identifier_name}' doesn't exist!")
 
                 if not (identifier_type == "variable" or identifier_type == "argument"):
                     raise Exception(f"{identifier} is not a variable or argument!")
@@ -366,6 +420,14 @@ class Parser:
 
         args = [arg[1] for arg in args]
 
+        split_identifier = function_name.split(".")
+        identifier_length = len(split_identifier)
+
+        if identifier_length == 2:
+            self.current_scope = split_identifier[0]
+
+        self.current_function_name = function_name
+
         identifier_type = self.get_identifier_type(function_name)
         if identifier_type == "variable":
             raise Exception(f"Function '{function_name}' can't have the same name as an already existing variable!")
@@ -374,9 +436,6 @@ class Parser:
         if identifier_type == "sprite":
             raise Exception(f"Function '{function_name}' can't have the same name as an already existing sprite!")
 
-        split_identifier = function_name.split(".")
-        identifier_length = len(split_identifier)
-
         if identifier_length == 1:
             self.global_functions[split_identifier[0]] = args
 
@@ -384,11 +443,6 @@ class Parser:
             if self.sprites[split_identifier[0]] is None:
                 raise Exception(f"Can't create '{function_name}', sprite doesn't exist!")
             self.sprites[split_identifier[0]]["functions"][function_name] = args
-
-        if identifier_length == 2:
-            self.current_scope = split_identifier[0]
-
-        self.current_function_name = function_name
 
         body = self.parse_body()
 
