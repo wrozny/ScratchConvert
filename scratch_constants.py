@@ -1,3 +1,13 @@
+from enum import Enum
+
+
+class Opcodes(Enum):
+    EVENT_WHENFLAGCLICKED = "event_whenflagclicked"
+    MOTION_MOVESTEPS = "motion_movesteps"
+
+    DATA_SETVARIABLETO = "data_setvariableto"
+
+
 META = {
     "semver": "3.0.0",
     "vm": "0.2.0-prerelease.20220222132735",
