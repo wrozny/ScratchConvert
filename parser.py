@@ -1,7 +1,7 @@
 builtin_libraries = {
     "debug": ["log"]
 }
-sprite_methods = ["move_steps", "rotate_right", "rotate_left", "move_to"]
+sprite_methods = ["move_steps", "rotate_right", "rotate_left", "move_to", "say"]
 
 
 def remove_quotation_mark(value):
@@ -459,8 +459,14 @@ class Parser:
             if current_token[0] == "RPAREN":
                 self.advance()
                 break
-            expression_tokens.append(self.current_token())
-            self.advance()
+
+            if current_token[0] == "ID":
+                identifier = self.expect_identifier()
+                identifier_type, identifier = self.get_identifier_type(identifier)
+                expression_tokens.append((identifier_type.upper(), identifier))
+            else:
+                expression_tokens.append(self.current_token())
+                self.advance()
 
         return expression_tokens
 

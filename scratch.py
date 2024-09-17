@@ -2,12 +2,8 @@ import json
 import os
 from uuid import uuid4
 
+import scratch_constants
 from scratch_constants import *
-
-
-# SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
-# BUILD_DIR_PATH = os.path.join(SCRIPT_PATH, "build")
-# PROJECT_DIR_PATH = os.path.join(BUILD_DIR_PATH, "project")
 
 
 def generate_uuid():
@@ -17,23 +13,108 @@ def generate_uuid():
 class Expression:
     def __init__(self, expression_tokens):
         self.expression_tokens = expression_tokens
+        self.current_token_index = 0
+        self.new_subject = None
+        self.old_subject = None
+        self.operation = None
+        self.blocks = []
 
-    def parse_single(self):
-        match self.expression_tokens[0][0]:
+    def parse_token(self, token):
+        match token[0]:
             case "STRING":
-                return self.expression_tokens[0][1].strip(r'"')
+                return [scratch_constants.Inputs.DIRECT_INPUT.value,
+                        [scratch_constants.Inputs.PLAIN_TEXT.value, token[1].strip(r'"')]]
             case "NUMBER":
-                return self.expression_tokens[0][1]
+                return [scratch_constants.Inputs.DIRECT_INPUT.value,
+                        [scratch_constants.Inputs.PLAIN_TEXT.value, token[1]]]
             case "ARGUMENT":
-                return ""
+                return self.parse_token(token=("STRING", "Argument will be parsed here instead! working on it"))
             case "VARIABLE":
-                return "Variable"
+                variable_name_split = token[1].split(".")
+                variable_id = token[1]
+                variable_name: str
+                if len(variable_name_split) == 1:
+                    variable_name = token[1]
+                else:
+                    variable_name = variable_name_split[1]
 
-    def parse(self):
+                input_value = [scratch_constants.Inputs.BLOCK_REFERENCE.value, [
+                    scratch_constants.Inputs.VARIABLE_INPUT.value,
+                    variable_name,
+                    variable_id
+                ]]
+
+                return input_value
+            case "BLOCK":
+                return [scratch_constants.Inputs.BLOCK_REFERENCE.value, token[1]]
+
+    def advance(self):
+        self.current_token_index += 1
+
+    def get_current_token(self):
+        if (len(self.expression_tokens) - 1) < self.current_token_index:
+            return None
+        return self.expression_tokens[self.current_token_index]
+
+    def expect_token(self, expected_tokens):
+        current_token = self.get_current_token()
+
+        if current_token is None and None in expected_tokens:
+            return None
+
+        if current_token[0] in expected_tokens:
+            self.advance()
+            return current_token
+        else:
+            raise Exception(f"Expected {expected_tokens}, got {current_token}")
+
+    def parse(self, target="set"):
+        if target == "compare":
+            self.expression_tokens.append(("COMPARE", "=="))
+            self.expression_tokens.append(("STRING", "true"))
+
         if len(self.expression_tokens) == 1:
-            return self.parse_single()
+            return self.parse_token(token=self.expression_tokens[0])
 
-        return "complex expression"
+        while self.get_current_token() is not None:
+            # Parse the first subject (e.g., a variable, number, or string)
+            if not self.new_subject:
+                self.new_subject = self.expect_token(["NUMBER", "STRING", "VARIABLE"])
+
+            # Parse the operation (e.g., "+", "-", "==" etc.)
+            self.operation = self.expect_token(["OP", "COMPARE", None])
+
+            if self.operation:
+
+                self.old_subject = self.blocks[-1] if len(self.blocks) > 0 else self.new_subject
+
+                if isinstance(self.old_subject, Block):
+                    self.old_subject = ("BLOCK", self.old_subject.id)
+
+                self.new_subject = self.expect_token(["NUMBER", "STRING", "VARIABLE"])
+
+                opcode = symbol_to_opcode_map[self.operation[1]]
+                input_value_name = opcode_to_input_name_map[opcode]
+
+                operation_block = Block(
+                    opcode=opcode,
+                    inputs={
+                        f"{input_value_name}1": self.parse_token(self.old_subject),
+                        f"{input_value_name}2": self.parse_token(self.new_subject)
+                    }
+                )
+
+                self.blocks.append(operation_block)
+
+                # Here we could build the expression block and return it or keep iterating for more complex expressions
+        previous_block = None
+        for block in self.blocks:
+            if previous_block is not None:
+                block.set_parent(previous_block)
+                previous_block = block
+
+        last_block_id = self.blocks[-1].id
+        return [scratch_constants.Inputs.BLOCK_REFERENCE.value, last_block_id]
 
 
 class Block:
@@ -64,8 +145,10 @@ class Block:
 
 
 class BlockStack:
-    def __init__(self):
+    def __init__(self, start_with_id=None, previous_block_id=None):
         self._blocks = []
+        self._start_with_id = start_with_id
+        self._previous_block_id = previous_block_id
         self._current_index = -1
 
     def add_block(self, block_obj):
@@ -77,10 +160,25 @@ class BlockStack:
             block_obj.set_parent(previous_block.id)
 
     def get_blocks(self, last_block=None):
+        if len(self._blocks) == 0:
+            return []
+
         if last_block is None:
-            self._blocks[0].set_level(True)
+            if self._start_with_id is not None:
+                self._blocks[0].id = self._start_with_id
+            elif self._previous_block_id is not None:
+                self._blocks[0].set_parent(self._previous_block_id)
+            else:
+                self._blocks[0].set_level(True)
         else:
             self._blocks[0].set_parent(last_block.id)
+
+            if self._start_with_id is not None:
+                self._blocks[0].id = self._start_with_id
+            if self._previous_block_id is not None:
+                self._blocks[0].set_parent(self._previous_block_id)
+
+
         return self._blocks
 
 

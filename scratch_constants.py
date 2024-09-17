@@ -7,6 +7,72 @@ class Opcodes(Enum):
 
     DATA_SETVARIABLETO = "data_setvariableto"
 
+    PROCEDURES_DEFINITION = "procedures_definition"
+    PROCEDURES_PROTOTYPE = "procedures_prototype"
+
+    CONTROL_IF = "control_if"
+    CONTROL_FOREVER = "control_forever"
+
+    LOOKS_SAY = "looks_say"
+
+    OPERATOR_ADD = "operator_add"
+    OPERATOR_SUBSTRACT = "operator_subtract"
+    OPERATOR_MULTIPLY = "operator_multiply"
+    OPERATOR_DIVIDE = "operator_divide"
+
+    OPERATOR_GT = "operator_gt"
+    OPERATOR_LT = "operator_lt"
+    OPERATOR_EQUALS = "operator_equals"
+
+    OPERATOR_AND = "operator_and"
+    OPERATOR_OR = "operator_or"
+    OPERATOR_NOT = "operator_not"
+
+    OPERATOR_JOIN = "operator_join"
+
+
+method_to_opcode_map = {
+    "move_steps": Opcodes.MOTION_MOVESTEPS.value,
+    "say": Opcodes.LOOKS_SAY.value
+}
+
+opcode_to_input_name_map = {
+    Opcodes.OPERATOR_ADD.value: "NUM",
+    Opcodes.OPERATOR_SUBSTRACT.value: "NUM",
+    Opcodes.OPERATOR_MULTIPLY.value: "NUM",
+    Opcodes.OPERATOR_DIVIDE.value: "NUM",
+
+    Opcodes.OPERATOR_GT.value: "OPERAND",
+    Opcodes.OPERATOR_LT.value: "OPERAND",
+    Opcodes.OPERATOR_EQUALS.value: "OPERAND",
+
+    Opcodes.OPERATOR_JOIN.value: "STRING",
+
+    Opcodes.LOOKS_SAY.value: "MESSAGE"
+}
+
+symbol_to_opcode_map = {
+    "+": Opcodes.OPERATOR_ADD.value,
+    "-": Opcodes.OPERATOR_SUBSTRACT.value,
+    "*": Opcodes.OPERATOR_MULTIPLY.value,
+    "/": Opcodes.OPERATOR_DIVIDE.value,
+
+    ">": Opcodes.OPERATOR_GT.value,
+    "<": Opcodes.OPERATOR_LT.value,
+    "==": Opcodes.OPERATOR_EQUALS.value,
+    "..": Opcodes.OPERATOR_JOIN.value
+}
+
+
+class Inputs(Enum):
+    DIRECT_INPUT = 1
+    STATEMENT_RESULT = 2
+    BLOCK_REFERENCE = 3
+    SHADOW_INPUT = 4
+    PLAIN_TEXT = 10
+    VARIABLE_INPUT = 12
+    ARGUMENT = 13
+
 
 META = {
     "semver": "3.0.0",
