@@ -44,11 +44,12 @@ class Compiler:
 
             update_stack.add_block(forever_block)
 
-            forever_substack = scratch.BlockStack(start_with_id=substack_first_block_id, previous_block_id=forever_block.id)
+            forever_substack = scratch.BlockStack(start_with_id=substack_first_block_id,
+                                                  previous_block_id=forever_block.id)
             sprite_obj.block_stacks["update"] = update_stack
             sprite_obj.block_stacks[substack_first_block_id] = forever_substack
-            return self._compile_func_tree(sprite_obj=sprite_obj, func_tree=func_tree, parent_stack=substack_first_block_id)
-
+            return self._compile_func_tree(sprite_obj=sprite_obj, func_tree=func_tree,
+                                           parent_stack=substack_first_block_id)
 
         for instruction in func_tree:
             match instruction[0]:
@@ -84,14 +85,13 @@ class Compiler:
 
                     stack_starting_block_id = scratch.generate_uuid()
 
-
                     inputs_info = {
                         "CONDITION": expression.parse(target="compare"),
                         "SUBSTACK": [scratch_constants.Inputs.STATEMENT_RESULT.value, stack_starting_block_id]
                     }
 
                     if len(func_tree) == 0:
-                        inputs_info["SUBSTACK"].pop("SUBSTACK", None)
+                        inputs_info["SUBSTACK"].pop("SUBSTACK")
 
                     if_statement = scratch.Block(
                         opcode=Opcodes.CONTROL_IF.value,
@@ -101,18 +101,18 @@ class Compiler:
                     for block in expression.blocks:
                         sprite_obj.data["blocks"][block.id] = block.data
 
-
                     sprite_obj.block_stacks[parent_stack].add_block(if_statement)
 
-                    new_block_stack = scratch.BlockStack(start_with_id=stack_starting_block_id, previous_block_id=if_statement.id)
+                    new_block_stack = scratch.BlockStack(start_with_id=stack_starting_block_id,
+                                                         previous_block_id=if_statement.id)
                     sprite_obj.block_stacks[stack_starting_block_id] = new_block_stack
 
                     self.last_stack = parent_stack
-                    self._compile_func_tree(sprite_obj=sprite_obj, func_tree=instruction[2], parent_stack=stack_starting_block_id)
+                    self._compile_func_tree(sprite_obj=sprite_obj, func_tree=instruction[2],
+                                            parent_stack=stack_starting_block_id)
                 case "call_method":
                     expression = scratch.Expression(expression_tokens=instruction[2][0])
                     method_name = instruction[1].split(".")[-1]
-
 
                     opcode = scratch_constants.method_to_opcode_map[method_name]
                     input_name = scratch_constants.opcode_to_input_name_map[opcode]
@@ -126,15 +126,13 @@ class Compiler:
 
                     sprite_obj.block_stacks[parent_stack].add_block(new_block)
 
-
-
     def _compile_function(self, sprite_obj, func_tree):
         func_chunks = func_tree[1].split(".")
 
         if len(func_chunks) == 1:
-            return self._compile_func_tree(sprite_obj=sprite_obj, func_tree=func_tree[3], parent_stack=scratch.generate_uuid())
+            return self._compile_func_tree(sprite_obj=sprite_obj, func_tree=func_tree[3],
+                                           parent_stack=scratch.generate_uuid())
         return self._compile_func_tree(sprite_obj=sprite_obj, func_tree=func_tree[3], parent_stack=func_chunks[1])
-
 
     def _create_sprite(self, sprite_name):
         sprite = scratch.Sprite(name=sprite_name)
@@ -156,7 +154,8 @@ class Compiler:
             if variable_initial_value == "":
                 continue
 
-            input_token = ["NUMBER" if isinstance(variable_initial_value, (int, float)) else "STRING", variable_initial_value]
+            input_token = ["NUMBER" if isinstance(variable_initial_value, (int, float)) else "STRING",
+                           variable_initial_value]
 
             expression = scratch.Expression(expression_tokens=[input_token])
 

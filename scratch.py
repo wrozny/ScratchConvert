@@ -178,7 +178,6 @@ class BlockStack:
             if self._previous_block_id is not None:
                 self._blocks[0].set_parent(self._previous_block_id)
 
-
         return self._blocks
 
 
